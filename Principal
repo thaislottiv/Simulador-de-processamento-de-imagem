@@ -1,0 +1,77 @@
+import cv2
+import numpy as np
+from tkinter import *
+from tkinter import filedialog
+from PIL import Image, ImageTk, ImageEnhance
+import matplotlib.pyplot as plt
+
+class ImageProcessor:
+    def __init__(self, master):
+        self.master = master
+        self.master.title("Simulador de Processamento de Imagem")
+        self.master.geometry("600x400")
+        
+        self.image = None
+        self.processed_image = None
+        
+        self.load_button = Button(master, text="Carregar Imagem", command=self.load_image)
+        self.load_button.pack()
+
+        self.detect_edges_button = Button(master, text="Detectar Bordas", command=self.detect_edges)
+        self.detect_edges_button.pack()
+
+        self.fourier_button = Button(master, text="Transformada de Fourier", command=self.apply_fourier)
+        self.fourier_button.pack()
+
+        self.contrast_button = Button(master, text="Ajustar Contraste", command=self.adjust_contrast)
+        self.contrast_button.pack()
+
+        self.save_button = Button(master, text="Salvar Imagem", command=self.save_image)
+        self.save_button.pack()
+
+        self.image_label = Label(master)
+        self.image_label.pack()
+
+    def load_image(self):
+        file_path = filedialog.askopenfilename()
+        if file_path:
+            self.image = Image.open(file_path)
+            self.display_image(self.image)
+
+    def display_image(self, img):
+        img.thumbnail((400, 400))
+        img = ImageTk.PhotoImage(img)
+        self.image_label.config(image=img)
+        self.image_label.image = img
+
+    def detect_edges(self):
+        if self.image:
+            img_cv = cv2.cvtColor(np.array(self.image), cv2.COLOR_RGB2BGR)
+            edges = cv2.Canny(img_cv, 100, 200)
+            self.processed_image = Image.fromarray(edges)
+            self.display_image(self.processed_image)
+
+    def apply_fourier(self):
+        if self.image:
+            img_cv = cv2.cvtColor(np.array(self.image), cv2.COLOR_RGB2GRAY)
+            f = np.fft.fft2(img_cv)
+            fshift = np.fft.fftshift(f)
+            magnitude_spectrum = 20 * np.log(np.abs(fshift))
+            self.processed_image = Image.fromarray(np.uint8(magnitude_spectrum))
+            self.display_image(self.processed_image)
+
+    def adjust_contrast(self):
+        if self.image:
+            enhancer = ImageEnhance.Contrast(self.image)
+            self.processed_image = enhancer.enhance(2)  # Ajusta o contraste
+            self.display_image(self.processed_image)
+
+    def save_image(self):
+        if self.processed_image:
+            save_path = filedialog.asksaveasfilename(defaultextension=".png")
+            if save_path:
+                self.processed_image.save(save_path)
+
+root = Tk()
+app = ImageProcessor(root)
+root.mainloop()
